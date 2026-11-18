@@ -1,0 +1,150 @@
+{
+  "variant_id": 7,
+  "group": "7",
+  "physics": {
+    "f_link": 0.9143,
+    "f_swap": 0.9822,
+    "t2_ms": 610.8,
+    "q_swap": 0.848,
+    "purification_allowed": true
+  },
+  "topology": {
+    "type": "chain3",
+    "links": [
+      {
+        "nodes": [
+          0,
+          1
+        ],
+        "attempt_rate": 3.6724,
+        "p_success": 0.0262
+      },
+      {
+        "nodes": [
+          1,
+          2
+        ],
+        "attempt_rate": 0.555,
+        "p_success": 0.341
+      }
+    ]
+  },
+  "policy": {
+    "swap_chains": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  "workload": {
+    "arrival_rate_per_s": 80.0,
+    "endpoints": [
+      [
+        0,
+        2
+      ]
+    ]
+  },
+  "reference": {
+    "one_hop": {
+      "attempt_rate": 3.6724,
+      "p_success": 0.0262
+    },
+    "two_hop": {
+      "links": [
+        {
+          "nodes": [
+            0,
+            1
+          ],
+          "attempt_rate": 3.6724,
+          "p_success": 0.0262
+        },
+        {
+          "nodes": [
+            1,
+            2
+          ],
+          "attempt_rate": 0.555,
+          "p_success": 0.341
+        }
+      ]
+    },
+    "expected": {
+      "one_hop_rate": 96.217,
+      "two_hop_rate": 96.217,
+      "two_hop_fidelity": 0.8211
+    }
+  },
+  "slo": {
+    "min_rate": 67.9,
+    "min_fidelity": 0.7855,
+    "max_p95_latency_ms": 46.1
+  },
+  "grading": {
+    "seed": 1007,
+    "held_out_seeds": [
+      7021,
+      7022,
+      7023
+    ],
+    "sim_time_ms": 8314,
+    "tolerances": {
+      "rate_rel": 0.08,
+      "fid_abs": 0.01
+    }
+  },
+  "experiment": {
+    "t2_grid_ms": [
+      152.7,
+      305.4,
+      610.8,
+      1221.6,
+      2443.2
+    ],
+    "seeds_per_point": 5,
+    "seeds": [
+      5007,
+      5107,
+      5207,
+      5307,
+      5407
+    ]
+  },
+  "calibration": {
+    "reference_policy": {
+      "rate": 84.1953,
+      "mean_fidelity": 0.8121,
+      "p95_latency_ms": 30.0647,
+      "pairs_consumed_per_delivery": 3.4271
+    },
+    "baseline_policy": {
+      "rate": 84.1953,
+      "mean_fidelity": 0.3086,
+      "p95_latency_ms": 30.0647,
+      "pairs_consumed_per_delivery": 3.4271
+    },
+    "held_out_reference": [
+      {
+        "rate": 84.1953,
+        "mean_fidelity": 0.8098,
+        "p95_latency_ms": 0.0,
+        "pairs_consumed_per_delivery": 3.4529
+      },
+      {
+        "rate": 82.2709,
+        "mean_fidelity": 0.8108,
+        "p95_latency_ms": 629.6825,
+        "pairs_consumed_per_delivery": 3.5102
+      },
+      {
+        "rate": 79.8653,
+        "mean_fidelity": 0.8102,
+        "p95_latency_ms": 361.2889,
+        "pairs_consumed_per_delivery": 3.4337
+      }
+    ],
+    "baseline_fails_slo": true
+  }
+}
