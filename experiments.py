@@ -54,21 +54,20 @@ def run_sensitivity(params, seeds) -> dict:
     grid = list(exp["t2_grid_ms"])
     seeds_per_point = int(exp["seeds_per_point"])
     use_seeds = list(seeds)[:seeds_per_point]
-    sim_time_ms = params["grading"]["sim_time_ms"]
+    sim_time = params["grading"]["sim_time_ms"]
 
     points = []
     for t2 in grid:
-        # One-at-a-time: only T2 changes; everything else stays at the
-        # variant's nominal values.
+        # changing only t2 at a time, keeping everything else constant
         p = copy.deepcopy(params)
         p["physics"]["t2_ms"] = t2
 
         rates = []
         for seed in use_seeds:
-            # Fresh policy per run so no state leaks between seeds.
+            # avoiding state leaks after each pass by creating fresh policy
             policy = make_policy(p)
-            res = run_variant_scenario(p, sim_time_ms, seed, policy)
-            rates.append(float(res["rate"]))
+            result = run_variant_scenario(p, sim_time, seed, policy)
+            rates.append(float(result["rate"]))
 
         mean, half = mean_ci95(rates)
         points.append({
@@ -77,15 +76,16 @@ def run_sensitivity(params, seeds) -> dict:
             "rate_ci95": half,
             "n_seeds": len(rates),
         })
-
+    # preparing results to store in a json file
     results = {
         "parameter": "t2_ms",
         "grid": grid,
         "seeds_per_point": seeds_per_point,
         "points": points,
     }
+    # dumping results
     with open("experiment_results.json", "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results,f,indent=2)
     return results
 
 
