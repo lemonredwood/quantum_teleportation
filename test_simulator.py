@@ -11,89 +11,91 @@ from policy import make_policy, FreshestPolicy
 with open("variant_params.json", "r") as f:
     params = json.load(f)
 
-seed = params["grading"]["seed"]
+seeds = [params["grading"]["seed"]] + params["grading"]["held_out_seeds"]
 sim_time_ms = params["grading"]["sim_time_ms"]
 
 expected = params["reference"]["expected"]
 tolerances = params["grading"]["tolerances"]
 
 
-# Test 1: One-hop simulation
-print("\n--- Test 1: One-hop ---")
+for seed in seeds:
+    print(f"\nTesting seed {seed}")
 
-one = run_one_hop(params, sim_time_ms, seed)
-print(one)
+    # Test 1: One-hop simulation
+    print("\n--- Test 1: One-hop ---")
 
-assert set(one.keys()) == {
-    "rate", "mean_fidelity"
-}
+    one = run_one_hop(params, sim_time_ms, seed)
+    print(one)
 
-assert (
-    abs(one["rate"] - expected["one_hop_rate"])
-    / expected["one_hop_rate"]
-    <= tolerances["rate_rel"]
-)
+    assert set(one.keys()) == {
+        "rate", "mean_fidelity"
+    }
 
-print("One-hop test passed.")
+    assert (
+        abs(one["rate"] - expected["one_hop_rate"])
+        / expected["one_hop_rate"]
+        <= tolerances["rate_rel"]
+    )
 
-
-# Test 2: Two-hop simulation
-print("\n--- Test 2: Two-hop ---")
-
-two = run_two_hop(params, sim_time_ms, seed)
-print(two)
-
-assert set(two.keys()) == {
-    "rate", "mean_fidelity"
-}
-
-assert (
-    abs(two["rate"] - expected["two_hop_rate"])
-    / expected["two_hop_rate"]
-    <= tolerances["rate_rel"]
-)
-
-assert (
-    abs(two["mean_fidelity"] - expected["two_hop_fidelity"])
-    <= tolerances["fid_abs"]
-)
-
-print("Two-hop test passed.")
+    print("One-hop test passed.")
 
 
-# Test 3: FreshestPolicy meets the variant rate and fidelity SLOs
-print("\n--- Test 3: FreshestPolicy SLOs ---")
+    # Test 2: Two-hop simulation
+    print("\n--- Test 2: Two-hop ---")
 
-variant = run_variant_scenario(params, sim_time_ms, seed, FreshestPolicy(params))
-print(variant)
+    two = run_two_hop(params, sim_time_ms, seed)
+    print(two)
 
-assert set(variant.keys()) == {
-    "rate",
-    "mean_fidelity",
-    "p95_latency_ms",
-    "pairs_consumed_per_delivery"
-}
+    assert set(two.keys()) == {
+        "rate", "mean_fidelity"
+    }
 
-slo = params["slo"]
-assert variant["rate"] >= slo["min_rate"], "Rate SLO missed"
-assert variant["mean_fidelity"] >= slo["min_fidelity"], "Fidelity SLO missed"
-print("p95 latency %.2f ms (target <= %.1f): %s" % (
-    variant["p95_latency_ms"], slo["max_p95_latency_ms"],
-    "met" if variant["p95_latency_ms"] <= slo["max_p95_latency_ms"] else "MISSED"))
+    assert (
+        abs(two["rate"] - expected["two_hop_rate"])
+        / expected["two_hop_rate"]
+        <= tolerances["rate_rel"]
+    )
 
-print("Variant policy SLO test passed.")
+    assert (
+        abs(two["mean_fidelity"] - expected["two_hop_fidelity"])
+        <= tolerances["fid_abs"]
+    )
+
+    print("Two-hop test passed.")
 
 
-# Test 4: Seeded determinism
-print("\n--- Test 4: Determinism ---")
+    # Test 3: FreshestPolicy meets the variant rate and fidelity SLOs
+    print("\n--- Test 3: FreshestPolicy SLOs ---")
 
-policy = make_policy(params)
-assert isinstance(policy, FreshestPolicy)
-variant_again = run_variant_scenario(params, sim_time_ms, seed, policy)
+    variant = run_variant_scenario(params, sim_time_ms, seed, FreshestPolicy(params))
+    print(variant)
 
-assert variant == variant_again
+    assert set(variant.keys()) == {
+        "rate",
+        "mean_fidelity",
+        "p95_latency_ms",
+        "pairs_consumed_per_delivery"
+    }
 
-print("Determinism test passed.")
+    slo = params["slo"]
+    assert variant["rate"] >= slo["min_rate"], "Rate SLO missed"
+    assert variant["mean_fidelity"] >= slo["min_fidelity"], "Fidelity SLO missed"
+    print("p95 latency %.2f ms (target <= %.1f): %s" % (
+        variant["p95_latency_ms"], slo["max_p95_latency_ms"],
+        "met" if variant["p95_latency_ms"] <= slo["max_p95_latency_ms"] else "MISSED"))
 
+    print("Variant policy SLO test passed.")
+
+
+    # Test 4: Seeded determinism
+    print("\n--- Test 4: Determinism ---")
+
+    policy = make_policy(params)
+    assert isinstance(policy, FreshestPolicy)
+    variant_again = run_variant_scenario(params, sim_time_ms, seed, policy)
+
+    assert variant == variant_again
+
+    print("Determinism test passed.")
 
 print("\nAll Task 1 local checks passed.")
