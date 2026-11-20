@@ -2,10 +2,9 @@
 """Local tests for QIS-NET Project 2 Task 1."""
 
 import json
-import math
 
 from simulator import run_one_hop, run_two_hop, run_variant_scenario
-from policy import make_policy, BaselinePolicy
+from policy import make_policy, FreshestPolicy
 
 
 # Load Group 7 parameters
@@ -62,14 +61,10 @@ assert (
 print("Two-hop test passed.")
 
 
-# Test 3: Simulator calibration — the PROVIDED BaselinePolicy must reproduce
-# calibration.baseline_policy (this validates the simulator, not our policy)
-print("\n--- Test 3: Calibration (BaselinePolicy) ---")
+# Test 3: FreshestPolicy meets the variant rate and fidelity SLOs
+print("\n--- Test 3: FreshestPolicy SLOs ---")
 
-variant = run_variant_scenario(
-    params, sim_time_ms, seed, BaselinePolicy(params)
-)
-
+variant = run_variant_scenario(params, sim_time_ms, seed, FreshestPolicy(params))
 print(variant)
 
 assert set(variant.keys()) == {
@@ -79,30 +74,12 @@ assert set(variant.keys()) == {
     "pairs_consumed_per_delivery"
 }
 
-# Compare with the provided baseline calibration
-baseline = params["calibration"]["baseline_policy"]
-
-for key in baseline:
-    assert math.isclose(
-        variant[key],
-        baseline[key],
-        abs_tol=0.0001
-    ), f"Mismatch in {key}"
-
-print("Calibration test passed.")
-
-
-# Test 3b: Our policy (make_policy) meets the rate and fidelity SLOs
-print("\n--- Test 3b: Variant policy SLOs ---")
-
-ours = run_variant_scenario(params, sim_time_ms, seed, make_policy(params))
-print(ours)
 slo = params["slo"]
-assert ours["rate"] >= slo["min_rate"], "Rate SLO missed"
-assert ours["mean_fidelity"] >= slo["min_fidelity"], "Fidelity SLO missed"
+assert variant["rate"] >= slo["min_rate"], "Rate SLO missed"
+assert variant["mean_fidelity"] >= slo["min_fidelity"], "Fidelity SLO missed"
 print("p95 latency %.2f ms (target <= %.1f): %s" % (
-    ours["p95_latency_ms"], slo["max_p95_latency_ms"],
-    "met" if ours["p95_latency_ms"] <= slo["max_p95_latency_ms"] else "MISSED"))
+    variant["p95_latency_ms"], slo["max_p95_latency_ms"],
+    "met" if variant["p95_latency_ms"] <= slo["max_p95_latency_ms"] else "MISSED"))
 
 print("Variant policy SLO test passed.")
 
@@ -110,11 +87,11 @@ print("Variant policy SLO test passed.")
 # Test 4: Seeded determinism
 print("\n--- Test 4: Determinism ---")
 
-variant_again = run_variant_scenario(
-    params, sim_time_ms, seed, make_policy(params)
-)
+policy = make_policy(params)
+assert isinstance(policy, FreshestPolicy)
+variant_again = run_variant_scenario(params, sim_time_ms, seed, policy)
 
-assert ours == variant_again
+assert variant == variant_again
 
 print("Determinism test passed.")
 

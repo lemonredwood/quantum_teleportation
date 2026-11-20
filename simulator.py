@@ -62,7 +62,7 @@ def request_times(params, sim_time_ms, seed):
     return times
 
 
-
+# ---------------------------------------------------------------- graded entry points
 
 def run_one_hop(params, sim_time_ms, seed) -> dict:
     """Reference scenario: a single elementary link, no swapping.
