@@ -78,7 +78,6 @@ def run_one_hop(params, sim_time_ms, seed) -> dict:
     DeliveredPair-equivalent record (or count pairs via state.stats and
     track fidelities in a list).
     """
-
     links = make_links(params, "one_hop")
 
     sim = Simulator(
@@ -90,24 +89,19 @@ def run_one_hop(params, sim_time_ms, seed) -> dict:
         seed=seed
     )
 
-    class OneHopPolicy:
-        def on_pair_ready(self, link, pair, state, sim):
-            sim.delivered.append(
-                DeliveredPair(
-                    request_id=-1,
-                    delivered_at=state.now,
-                    fidelity=state.current_fidelity(pair),
-                    consumed=1
-                )
-            )
-
-    delivered = sim.run(sim_time_ms, policy=OneHopPolicy())
+    sim.run(sim_time_ms)
+    delivered = []
+    for pair in sim.state.pairs.get(0, []):
+        delivery = DeliveredPair(request_id=-1, delivered_at=pair.born,
+                                 fidelity=pair.f0, consumed=1)
+        delivered.append(delivery)
     results = summarise(delivered, sim_time_ms)
 
     return {
         "rate": results["rate"],
         "mean_fidelity": results["mean_fidelity"]
     }
+
 
 def run_two_hop(params, sim_time_ms, seed) -> dict:
     """Reference scenario: two links, one repeater, immediate swap,
@@ -142,6 +136,7 @@ def run_two_hop(params, sim_time_ms, seed) -> dict:
         "mean_fidelity": results["mean_fidelity"]
     }
 
+
 def run_variant_scenario(params, sim_time_ms, seed, policy) -> dict:
     """Full variant scenario with YOUR policy.
     Return {"rate": ..., "mean_fidelity": ..., "p95_latency_ms": ...,
@@ -158,7 +153,6 @@ def run_variant_scenario(params, sim_time_ms, seed, policy) -> dict:
       * return the four metrics. pairs_consumed_per_delivery =
         stats['generated'] / max(1, delivered).
     """
-    
     physics = params["physics"]
 
     links = make_links(params, "variant")
@@ -172,24 +166,15 @@ def run_variant_scenario(params, sim_time_ms, seed, policy) -> dict:
         seed=seed
     )
 
-    sim.run(sim_time_ms, policy=policy)
-
-    deliveries = sorted(
-        sim.delivered,
-        key=lambda pair: pair.delivered_at
-    )
-
+    # The simulator registers deliverries sorted by time
+    deliveries = sim.run(sim_time_ms, policy=policy)
     arrivals = request_times(params, sim_time_ms, seed)
-
     served = min(len(arrivals), len(deliveries))
-
     latencies = []
-
     for i in range(served):
-        latency = max(
-            0.0,
-            deliveries[i].delivered_at - arrivals[i]
-        )
+        latency = deliveries[i].delivered_at - arrivals[i]
+        if latency < 0:
+            latency = 0.0  # a pair was waiting
         latencies.append(latency)
 
     latencies.sort()
